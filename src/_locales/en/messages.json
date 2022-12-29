@@ -7,5 +7,14 @@
   },
   "not_supported_error": {
     "message": "Your browser does not support the EyeDropper API. Please upgrade to the latest version."
+  },
+  "option_type": {
+    "message": "Color Model"
+  },
+  "option_type_hex": {
+    "message": "Hex"
+  },
+  "option_type_rgb": {
+    "message": "RGB"
   }
 }

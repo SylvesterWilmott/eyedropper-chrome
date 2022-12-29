@@ -41,7 +41,7 @@
     }
   `;
 
-  function start() {
+  async function start() {
     if (!window.EyeDropper) {
       alert(chrome.i18n.getMessage("not_supported_error"));
       return;
@@ -51,16 +51,39 @@
       return;
     }
 
+    let type = await load("type", "hex");
     let eyeDropper = new EyeDropper();
-    let abortController = new AbortController();
     let message;
+    let result;
 
-    eyeDropper.open({ signal: abortController.signal }).then(async (result) => {
+    try {
+      result = await eyeDropper.open();
+    } catch (err) {
+      console.log(err);
+      return;
+    }
+
+    switch(type) {
+      case "hex":
         await copyToClipboard(result.sRGBHex);
-        showMessage(result.sRGBHex);
-      }).catch((err) => {
-        console.log(err);
-    });
+        break;
+      case "rgb":
+        await copyToClipboard(hexToRgb(result.sRGBHex));
+        break;
+    }
+
+    showMessage(result.sRGBHex);
+
+    function hexToRgb(hex) {
+      hex = hex.replace(/[^0-9A-F]/gi, '');
+
+      let int = parseInt(hex, 16);
+      let r = (int >> 16) & 255;
+      let g = (int >> 8) & 255;
+      let b = int & 255;
+
+      return "rgb(" + r + ", " + g + ", " + b + ")" ;
+    }
 
     async function copyToClipboard(value) {
       await navigator.clipboard.writeText(value);
@@ -68,6 +91,17 @@
 
     function showMessage(hex) {
       if (message) removeMessage();
+
+      let colorStr;
+
+      switch(type) {
+        case "hex":
+          colorStr = result.sRGBHex.toUpperCase();
+          break;
+        case "rgb":
+          colorStr = hexToRgb(result.sRGBHex);
+          break;
+      }
 
       createMessageElement();
 
@@ -85,7 +119,7 @@
 
       let label = document.createElement("div");
       label.setAttribute("class", "label");
-      label.innerHTML = `Copied <span class="color" style="background-color: ` + hex + `;"></span> <strong>` + hex.toString().toUpperCase() + `</strong> to Clipboard!`;
+      label.innerHTML = `Copied <span class="color" style="background-color: ` + hex + `;"></span> <strong>` + colorStr + `</strong> to Clipboard!`;
       shadowMessage.appendChild(label);
 
       document.body.insertBefore(message, document.body.firstChild);
@@ -111,6 +145,22 @@
       message.remove();
       message = null;
     }
+  }
+
+  function load(key, defaults) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get(
+        {
+          [key]: defaults,
+        },
+        function (value) {
+          if (chrome.runtime.lastError) {
+            console.log(chrome.runtime.lastError.message);
+          }
+          resolve(value[key]);
+        }
+      );
+    });
   }
 
   start();
