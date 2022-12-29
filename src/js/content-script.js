@@ -43,7 +43,7 @@
 
   function start() {
     if (!window.EyeDropper) {
-      alert("Your browser does not support the EyeDropper API");
+      alert(chrome.i18n.getMessage("not_supported_error"));
       return;
     }
 
